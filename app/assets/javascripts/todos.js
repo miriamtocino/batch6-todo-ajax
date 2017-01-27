@@ -1,6 +1,26 @@
 function toggleDone() {
-  $(this).parent().parent().toggleClass("success");
-  updateCounters();
+  var checkbox = this;
+  var tableRow = $(this).parent().parent();
+
+  var todoId = tableRow.data('id');
+  var isCompleted = !tableRow.hasClass("success");
+
+  $.ajax({
+    type: "PUT",
+    url: "/todos/" + todoId + ".json",
+    data: JSON.stringify({
+      todo: { completed: isCompleted }
+    }),
+    contentType: "application/json",
+    dataType: "json"})
+
+    .done(function(data) {
+      console.log(data);
+
+      tableRow.toggleClass("success", data.completed);
+
+      updateCounters();
+    });
 }
 
 function updateCounters() {
@@ -63,7 +83,7 @@ function showError(message) {
 
 function resetErrors() {
   $("#error_message").remove();
-  $("#formgroup-title").removeClass("has-error");
+  $("#todo_title").removeClass("error");
 }
 
 function submitTodo(event) {
@@ -77,9 +97,27 @@ function submitTodo(event) {
 
 function cleanUpDoneTodos(event) {
   event.preventDefault();
-  $.when($(".success").remove())
-    .then(updateCounters);
+
+  $.each($(".success"), function(index, tableRow) {
+    $tableRow = $(tableRow);
+    todoId = $(tableRow).data('id');
+    deleteTodo(todoId);
+  });
 }
+
+function deleteTodo(todoId) {
+  $.ajax({
+    type: "DELETE",
+    url: "/todos/" + todoId + ".json",
+    contentType: "application/json",
+    dataType: "json"})
+
+    .done(function(data) {
+      $('tr[data-id="'+todoId+'"]').remove();
+      updateCounters();
+    });
+}
+
 
 $(document).ready(function() {
   $("input[type=checkbox]").bind('change', toggleDone);
